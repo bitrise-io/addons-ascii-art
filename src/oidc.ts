@@ -27,7 +27,7 @@ export default class OIDC {
     }, async function (error) {
       const originalRequest = error.config;
 
-      if (error.response.status === 403 && !originalRequest._retry) {
+      if (error.response && error.response.status === 403 && !originalRequest._retry) {
         originalRequest._retry = true;
         const access_token = parent.refreshAccessToken(appSlug, clientID);
         originalRequest.headers['Authorization'] = 'Bearer ' + access_token;

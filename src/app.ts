@@ -10,7 +10,7 @@ const port = process.env.PORT || 3000;
 const clientID = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 const authBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io'
-const apiBaseURL = process.env.API_BASE_URL || 'https://api.bitrise.io'
+const apiBaseURL = process.env.API_BASE_URL || 'https://api.bitrise.io/v0.2'
 const inMemStorage = {};
 const oidc = new OIDC(authBaseURL, inMemStorage);
 
@@ -33,6 +33,20 @@ const middleware = jwtMiddleware({
     jwksRequestsPerMinute: 5,
     jwksUri: authBaseURL+'/auth/realms/addons/protocol/openid-connect/certs'
   }),
+});
+
+// -
+
+app.get('/asciiart/:app_slug', async (req, res) => {
+  try {
+    const response = await oidc.axiosClient(req.params.app_slug,clientID).get(apiBaseURL+ '/apps/' + req.params.app_slug)
+    res.send(response.data['data'].title).end();
+  } catch(error) {
+    if (error.response) {
+      return res.status(error.response.status).send(error.response.data).end();
+    }
+    res.status(400).send(error.message).end();
+  }
 });
 
 // -
@@ -87,18 +101,7 @@ app.post('/login', (req, res) => {
 
 // -
 
-app.delete('/provision/{app_slug}', (req, res) => {
-});
-
-// -
-
-app.get('/asciiart/{app_slug}', async (req, res) => {
-  try {
-    const response = await oidc.axiosClient(req.params.app_slug,clientID).get(apiBaseURL+ '/apps/' + req.params.app_slug)
-    res.send(response.data['data'].title)
-  } catch(error) {
-    res.status(error.response.status).send(error.response.data);
-  }
+app.delete('/provision/:app_slug', (req, res) => {
 });
 
 //
