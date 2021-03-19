@@ -5,6 +5,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const clientID = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
+const tokenBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io'
 
 app.get('/', (req, res) => {
   res.send('Welcome to ASCII art');
@@ -32,7 +33,7 @@ app.post('/provision', (req, res) => {
     }
   }
 
-  axios.post('https://auth.services.bitrise.dev/auth/realms/addons/protocol/openid-connect/token', params, config).then(function (response) {
+  axios.post(tokenBaseURL+'/auth/realms/addons/protocol/openid-connect/token', params, config).then(function (response) {
     const accessToken = response.data.access_token;
     const refreshToken = response.data.refresh_token;
 
