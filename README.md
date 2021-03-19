@@ -3,7 +3,7 @@
 ## Development
 
 1. Run `yarn install`
-1. Export envs: `CLIENT_ID` and `CLIENT_SECRET`
+1. Export envs: `CLIENT_ID` and `CLIENT_SECRET` (and optionally PORT, TOKEN_BASE_URL)
 1. Run `yarn dev`
 
 or 
@@ -13,6 +13,8 @@ or
     envs: 
     - CLIENT_ID: ...
     - CLIENT_SECRET: ...
+    - PORT: ... (optional)
+    - TOKEN_BASE_URL: ... (optional)
     ```
 1. Run `bitrise run up`
 
