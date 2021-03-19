@@ -6,8 +6,8 @@
   "author": "PLatform team",
   "license": "MIT",
   "scripts": {
-    "start": "ts-node src/app.ts",
-    "dev": "nodemon --watch src src/app.ts"
+    "dev": "nodemon --watch src src/app.ts",
+    "start": "tsc && node dist/app.js"
   },
   "dependencies": {
     "@types/node": "^14.14.35",
