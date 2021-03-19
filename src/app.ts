@@ -1,5 +1,7 @@
 import express from 'express';
 import axios, { AxiosInstance } from 'axios';
+import jwtMiddleware from 'express-jwt';
+import jwksRsa from 'jwks-rsa';
 import bodyParser from 'body-parser';
 
 const app = express();
@@ -25,9 +27,21 @@ app.get('/', (req, res) => {
   res.send('Welcome to ASCII art');
 });
 
+
+const middleware = jwtMiddleware({
+  algorithms: ["RS256"],
+  issuer: 'https://auth.services.bitrise.dev/auth/realms/addons',
+  secret: jwksRsa.expressJwtSecret({
+    cache: true,
+    rateLimit: true,
+    jwksRequestsPerMinute: 5,
+    jwksUri: 'https://auth.services.bitrise.dev/auth/realms/addons/protocol/openid-connect/certs'
+  }),
+});
+
 // -
 
-app.post('/provision', async (req, res) => {
+app.post('/provision', middleware, async (req, res) => {
   const token = getTokenFromHeader(req)
 
   if (!token) {
