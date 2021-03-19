@@ -1,0 +1,14 @@
+format_version: "8"
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+
+app:
+  envs:
+  - CLIENT_ID: $CLIENT_ID
+  - CLIENT_SECRET: $CLIENT_SECRET
+
+workflows:
+  up:
+    steps:
+    - script@1:
+        inputs:
+        - content: yarn install && yarn dev
