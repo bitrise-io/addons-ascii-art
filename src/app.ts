@@ -3,20 +3,16 @@ import axios, { AxiosInstance } from 'axios';
 import jwtMiddleware from 'express-jwt';
 import jwksRsa from 'jwks-rsa';
 import bodyParser from 'body-parser';
+import OIDC from './oidc';
 
 const app = express();
 const port = process.env.PORT || 3000;
 const clientID = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
-const tokenBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io'
+const authBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io'
 const apiBaseURL = process.env.API_BASE_URL || 'https://api.bitrise.io'
-
-const inmemStorage = {
-  // "test-app-slug": {
-  //   accessToken: "access-token",
-  //   refreshToken: "refresh-token",
-  // }
-};
+const inMemStorage = {};
+const oidc = new OIDC(authBaseURL, inMemStorage);
 
 //
 // Routes
@@ -24,18 +20,18 @@ const inmemStorage = {
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
-  res.send('Welcome to ASCII art');
+  res.send('Welcome to ASCII art').end();
 });
 
 
 const middleware = jwtMiddleware({
   algorithms: ["RS256"],
-  issuer: 'https://auth.services.bitrise.dev/auth/realms/addons',
+  issuer: authBaseURL+'/auth/realms/addons',
   secret: jwksRsa.expressJwtSecret({
     cache: true,
     rateLimit: true,
     jwksRequestsPerMinute: 5,
-    jwksUri: 'https://auth.services.bitrise.dev/auth/realms/addons/protocol/openid-connect/certs'
+    jwksUri: authBaseURL+'/auth/realms/addons/protocol/openid-connect/certs'
   }),
 });
 
@@ -45,7 +41,7 @@ app.post('/provision', middleware, async (req, res) => {
   const token = getTokenFromHeader(req)
 
   if (!token) {
-    res.status(401).send({ code: 400, message: 'invalid token in Authorization header' });
+    res.status(401).send({ code: 400, message: 'invalid token in Authorization header' }).end();
     return;
   }
 
@@ -64,24 +60,21 @@ app.post('/provision', middleware, async (req, res) => {
   }
 
   try {
-    const response = await axios.post(tokenBaseURL + '/auth/realms/addons/protocol/openid-connect/token', params, config);
+    const response = await axios.post(authBaseURL + '/auth/realms/addons/protocol/openid-connect/token', params, config);
 
     const accessToken = response.data.access_token;
     const refreshToken = response.data.refresh_token;
 
-    inmemStorage[req.body.app_slug] = {
+    inMemStorage[req.body.app_slug] = {
       accessToken: accessToken,
       refreshToken: refreshToken,
     }
-
-    console.log(inmemStorage[req.body.app_slug]);
 
     res.sendStatus(200).end();
   } catch(error) {
     if (error.response) {
       return res.status(error.response.status).send(error.response.data).end();
     }
-
     res.status(400).end();
   }
 });
@@ -89,7 +82,7 @@ app.post('/provision', middleware, async (req, res) => {
 // -
 
 app.post('/login', (req, res) => {
-  res.send('hi meercode');
+  res.send('hi meercode').end();
 });
 
 // -
@@ -100,10 +93,8 @@ app.delete('/provision/{app_slug}', (req, res) => {
 // -
 
 app.get('/asciiart/{app_slug}', async (req, res) => {
-  const axiosApiInstance = getOAuth2ClientForAppSlug(req.params.app_slug)
-
   try {
-    const response = await axiosApiInstance.get(apiBaseURL+ '/apps/' + req.params.app_slug)
+    const response = await oidc.axiosClient(req.params.app_slug,clientID).get(apiBaseURL+ '/apps/' + req.params.app_slug)
     res.send(response.data['data'].title)
   } catch(error) {
     res.status(error.response.status).send(error.response.data);
@@ -127,61 +118,3 @@ let getTokenFromHeader = (req: any): string | undefined => {
 
   return token.substr(bearerPrefixLen);
 }
-
-const refreshAccessToken = (appSlug: string): string => {
-  const params = new URLSearchParams({
-    'grant_type': 'refresh_token',
-    'client_id': clientID,
-    'refresh_token': inmemStorage[appSlug].refreshToken,
-  });
-
-  const config = {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    }
-  }
-
-  axios.post(tokenBaseURL + '/auth/realms/addons/protocol/openid-connect/token', params, config).then(function (response) {
-    const accessToken = response.data.access_token;
-    const refreshToken = response.data.refresh_token;
-
-    inmemStorage[appSlug] = {
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-    }
-
-    return accessToken
-  }).catch(function (error) {
-    console.log(error.response.status, error.response.data);
-  });
-  return ''
-}
-
-const getOAuth2ClientForAppSlug = (appSlug: string): AxiosInstance => {
-  const axiosApiInstance = axios.create();
-  axiosApiInstance.interceptors.request.use(
-    async config => {
-      config.headers = {
-        'Authorization': `Bearer ` + inmemStorage[appSlug].accessToken,
-      }
-      return config;
-    },
-    error => {
-      Promise.reject(error)
-    });
-
-    axiosApiInstance.interceptors.response.use((response) => {
-      return response
-    }, async function (error) {
-      const originalRequest = error.config;
-      if (error.response.status === 403 && !originalRequest._retry) {
-        originalRequest._retry = true;
-        const access_token = refreshAccessToken(appSlug);
-        originalRequest.headers['Authorization'] = 'Bearer ' + access_token;
-        return axiosApiInstance(originalRequest);
-      }
-      return Promise.reject(error);
-    });
-
-    return axiosApiInstance;
-  }
