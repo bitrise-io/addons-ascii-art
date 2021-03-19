@@ -1,5 +1,6 @@
 import express from 'express';
 import axios, { AxiosInstance } from 'axios';
+import bodyParser from 'body-parser';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -8,7 +9,7 @@ const clientSecret = process.env.CLIENT_SECRET;
 const tokenBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io'
 const apiBaseURL = process.env.API_BASE_URL || 'https://api.bitrise.io'
 
-let inmemStorage = {
+const inmemStorage = {
   // "test-app-slug": {
   //   accessToken: "access-token",
   //   refreshToken: "refresh-token",
@@ -18,13 +19,15 @@ let inmemStorage = {
 //
 // Routes
 
+app.use(bodyParser.json());
+
 app.get('/', (req, res) => {
   res.send('Welcome to ASCII art');
 });
 
 // -
 
-app.post('/provision', (req, res) => {
+app.post('/provision', async (req, res) => {
   const token = getTokenFromHeader(req)
 
   if (!token) {
@@ -46,7 +49,9 @@ app.post('/provision', (req, res) => {
     }
   }
 
-  axios.post(tokenBaseURL + '/auth/realms/addons/protocol/openid-connect/token', params, config).then(function (response) {
+  try {
+    const response = await axios.post(tokenBaseURL + '/auth/realms/addons/protocol/openid-connect/token', params, config);
+
     const accessToken = response.data.access_token;
     const refreshToken = response.data.refresh_token;
 
@@ -55,10 +60,16 @@ app.post('/provision', (req, res) => {
       refreshToken: refreshToken,
     }
 
-    res.sendStatus(200)
-  }).catch(function (error) {
-    res.status(error.response.status).send(error.response.data);
-  });
+    console.log(inmemStorage[req.body.app_slug]);
+
+    res.sendStatus(200).end();
+  } catch(error) {
+    if (error.response) {
+      return res.status(error.response.status).send(error.response.data).end();
+    }
+
+    res.status(400).end();
+  }
 });
 
 // -
@@ -74,14 +85,15 @@ app.delete('/provision/{app_slug}', (req, res) => {
 
 // -
 
-app.get('/asciiart/{app_slug}', (req, res) => {
+app.get('/asciiart/{app_slug}', async (req, res) => {
   const axiosApiInstance = getOAuth2ClientForAppSlug(req.params.app_slug)
 
-  axiosApiInstance.get(apiBaseURL+ '/apps/' + req.params.app_slug).then(function (response) {
+  try {
+    const response = await axiosApiInstance.get(apiBaseURL+ '/apps/' + req.params.app_slug)
     res.send(response.data['data'].title)
-  }).catch(function (error) {
+  } catch(error) {
     res.status(error.response.status).send(error.response.data);
-  });
+  }
 });
 
 //
@@ -102,7 +114,7 @@ let getTokenFromHeader = (req: any): string | undefined => {
   return token.substr(bearerPrefixLen);
 }
 
-let refreshAccessToken = (appSlug: string): string => {
+const refreshAccessToken = (appSlug: string): string => {
   const params = new URLSearchParams({
     'grant_type': 'refresh_token',
     'client_id': clientID,
@@ -131,7 +143,7 @@ let refreshAccessToken = (appSlug: string): string => {
   return ''
 }
 
-let getOAuth2ClientForAppSlug = (appSlug: string): AxiosInstance => {
+const getOAuth2ClientForAppSlug = (appSlug: string): AxiosInstance => {
   const axiosApiInstance = axios.create();
   axiosApiInstance.interceptors.request.use(
     async config => {
@@ -144,18 +156,18 @@ let getOAuth2ClientForAppSlug = (appSlug: string): AxiosInstance => {
       Promise.reject(error)
     });
 
-  axiosApiInstance.interceptors.response.use((response) => {
-    return response
-  }, async function (error) {
-    const originalRequest = error.config;
-    if (error.response.status === 403 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      const access_token = refreshAccessToken(appSlug);
-      originalRequest.headers['Authorization'] = 'Bearer ' + access_token;
-      return axiosApiInstance(originalRequest);
-    }
-    return Promise.reject(error);
-  });
+    axiosApiInstance.interceptors.response.use((response) => {
+      return response
+    }, async function (error) {
+      const originalRequest = error.config;
+      if (error.response.status === 403 && !originalRequest._retry) {
+        originalRequest._retry = true;
+        const access_token = refreshAccessToken(appSlug);
+        originalRequest.headers['Authorization'] = 'Bearer ' + access_token;
+        return axiosApiInstance(originalRequest);
+      }
+      return Promise.reject(error);
+    });
 
-  return axiosApiInstance;
-}
+    return axiosApiInstance;
+  }
