@@ -1,68 +1,55 @@
 import axios, { AxiosInstance } from 'axios';
+import { Tokens } from './types';
 
-export default class OIDC {
-  private storage = {};
-  private tokenBaseURL: string;
+export default class {
+  private tokenUrl: string;
 
-  constructor(tokenBaseURL: string, storage: {}) {
-    this.storage = storage;
-    this.tokenBaseURL = tokenBaseURL;
+  private clientID: string;
+  private clientSecret: string;
+
+  constructor(tokenBaseURL: string, clientID: string, clientSecret: string) {
+    this.tokenUrl = `${tokenBaseURL}/auth/realms/addons/protocol/openid-connect/token`;
+    this.clientID = clientID;
+    this.clientSecret = clientSecret;
   }
 
-  public axiosClient = (appSlug: string, clientID: string): AxiosInstance => {
-    const parent = this;
-    
-    const axiosApiInstance = axios.create();
-    axiosApiInstance.interceptors.request.use(
-      async config => {
-        config.headers['Authorization'] = `Bearer ` + parent.storage[appSlug].accessToken;
-        return config;
-      },
-      error => {
-        Promise.reject(error)
-      });
-
-    axiosApiInstance.interceptors.response.use((response) => {
-      return response
-    }, async function (error) {
-      const originalRequest = error.config;
-
-      if (error.response && error.response.status === 403 && !originalRequest._retry) {
-        originalRequest._retry = true;
-        const access_token = parent.refreshAccessToken(appSlug, clientID);
-        originalRequest.headers['Authorization'] = 'Bearer ' + access_token;
-        return axiosApiInstance(originalRequest);
-      }
-      
-      return Promise.reject(error);
-    });
-
-    return axiosApiInstance;
-  }
-
-  private refreshAccessToken = async(appSlug: string, clientID: string): Promise<string> => {
+  public exchangeToken = async (token: string): Promise<Tokens> => {
     const params = new URLSearchParams({
-      'grant_type': 'refresh_token',
-      'client_id': clientID,
-      'refresh_token': this.storage[appSlug].refreshToken,
+      'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
+      'client_id': this.clientID,
+      'client_secret': this.clientSecret,
+      'subject_token': token,
+      'requested_token_type': 'urn:ietf:params:oauth:token-type:refresh_token'
     });
 
     const config = {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    }
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    };
 
-    const response = await axios.post(this.tokenBaseURL + '/auth/realms/addons/protocol/openid-connect/token', params, config)
+    const response = await axios.post(this.tokenUrl, params, config);
 
-      const accessToken = response.data.access_token;
-      const refreshToken = response.data.refresh_token;
+    const accessToken = response.data.access_token;
+    const refreshToken = response.data.refresh_token;
 
-      this.storage[appSlug] = {
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-      }
+    return { accessToken, refreshToken };
+  };
 
-      return accessToken
+  public refreshAccessToken = async(refreshToken: string): Promise<Tokens> => {
+    const params = new URLSearchParams({
+      'grant_type': 'refresh_token',
+      'client_id': this.clientID,
+      'refresh_token': refreshToken,
+    });
+
+    const config = {
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+    };
+
+    const response = await axios.post(this.tokenUrl, params, config);
+
+    const accessToken = response.data.access_token;
+    refreshToken = response.data.refresh_token;
+
+    return { accessToken, refreshToken };
   }
 }

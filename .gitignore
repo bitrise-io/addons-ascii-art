@@ -1,4 +1,7 @@
 dist/
+out/
 
 node_modules/
 .bitrise.secrets.yml
+
+.env
