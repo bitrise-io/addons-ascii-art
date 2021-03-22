@@ -1,7 +1,7 @@
 dist/
 out/
 
-.vscode
+.vscode/
 
 node_modules/
 .bitrise.secrets.yml
