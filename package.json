@@ -7,7 +7,9 @@
   "license": "MIT",
   "scripts": {
     "dev": "nodemon --watch src src/app.ts",
-    "start": "tsc && node dist/app.js"
+    "build": "tsc --project tsconfig.json",
+    "start": "tsc && node out/app.js",
+    "postinstall": "yarn build"
   },
   "dependencies": {
     "@types/node": "^14.14.35",
