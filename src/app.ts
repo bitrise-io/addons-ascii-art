@@ -15,7 +15,7 @@ const clientSecret = process.env.CLIENT_SECRET;
 const ssoSecret = process.env.SSO_SECRET;
 
 const authBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io'
-let tokens: Tokens;
+let tokens: Tokens = { accessToken: "", refreshToken: "" };
 
 const oidc = new OIDC(authBaseURL, clientID, clientSecret);
 const apiClient = new ApiClient(tokens, oidc);
