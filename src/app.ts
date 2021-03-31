@@ -23,8 +23,6 @@ const apiClient = new ApiClient(tokens, oidc);
 //
 // Routes
 
-app.use(bodyParser.json());
-
 app.get('/', (_, res) => {
   res.send('Welcome to ASCII art').end();
 });
@@ -45,17 +43,17 @@ const verifySSOSecret = (req, res, next) => {
 
   const hash = crypto.createHash('sha1');
   hash.update(`${app_slug}:${ssoSecret}:${timestamp}`);
-
+  
   if (hash.digest('hex') !== token) {
     return res.status(401).end();
   }
-
+  
   next();
 };
 
 // -
 
-app.post('/provision', verifyJWT, async (req, res) => {
+app.post('/provision', bodyParser.json(), verifyJWT, async (req, res) => {
   const token = getTokenFromHeader(req)
 
   try {
@@ -74,14 +72,13 @@ app.post('/provision', verifyJWT, async (req, res) => {
 
 // -
 
-app.post('/login', verifySSOSecret, (req, res) => {
-  const { data } = apiClient.getApp(req.body.app_slug);
-  figlet(`Hi from ${data['data'].title}`, (err, data) => res.send(data || '').status(err ? 500 : 200).end());
+app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, (req, res) => {
+  res.send(`Hi ${req.body.app_slug}!`).end()
 });
 
 // -
 
-app.delete('/provision/:app_slug', verifyJWT, (req, res) => {
+app.delete('/provision/:app_slug', bodyParser.json(), verifyJWT, (req, res) => {
   res.send(`Clearing any ${req.params.app_slug} data...`).status(200).end();
 });
 
