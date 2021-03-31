@@ -1,17 +1,22 @@
 import axios from 'axios';
 import { Tokens } from './types';
 import OIDC from './oidc';
+import TokenStore from './token_store';
 
 const apiBaseURL = process.env.API_BASE_URL || 'https://api.bitrise.io/v0.2'
 
 export default class {
   private axiosApiInstance: any;
+  private appSlug: string;
 
-  constructor(tokens: Tokens, oidc: OIDC) {
+  constructor(appSlug: string, oidc: OIDC, tokenStore: TokenStore) {
     this.axiosApiInstance = axios.create();
+    this.appSlug = appSlug;
 
     this.axiosApiInstance.interceptors.request.use(
       async config => {
+        let tokens = await tokenStore.retrieveTokensFromStore(this.appSlug);
+
         config.headers['Authorization'] = `Bearer ${tokens.accessToken}`;
         return config;
       },
@@ -24,10 +29,9 @@ export default class {
 
         if (error.response && error.response.status === 403 && !originalRequest._retry) {
           originalRequest._retry = true;
-          const { refreshToken, accessToken } = await oidc.refreshAccessToken(tokens.refreshToken);
 
-          tokens.accessToken = accessToken;
-          tokens.refreshToken = refreshToken;
+          let tokens = await tokenStore.retrieveTokensFromStore(this.appSlug)
+          const { refreshToken, accessToken } = await oidc.refreshAccessToken(appSlug, tokens.refreshToken);
 
           originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
           return this.axiosApiInstance(originalRequest);
@@ -37,5 +41,5 @@ export default class {
       });
     }
 
-    public getApp = (appSlug: string) => this.axiosApiInstance.get(`${apiBaseURL}/apps/${appSlug}`);
+    public getApp = () => this.axiosApiInstance.get(`${apiBaseURL}/apps/${this.appSlug}`);
   };
