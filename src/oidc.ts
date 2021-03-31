@@ -36,6 +36,11 @@ export default class {
     const accessToken = response.data.access_token;
     const refreshToken = response.data.refresh_token;
 
+    console.log("exchangeToken")
+    console.log(appSlug)
+    console.log(accessToken)
+    console.log(refreshToken)
+
     this.tokenStore.storeTokensInRedis(appSlug, { accessToken: accessToken, refreshToken: refreshToken })
 
     return { accessToken, refreshToken };
@@ -45,6 +50,7 @@ export default class {
     const params = new URLSearchParams({
       'grant_type': 'refresh_token',
       'client_id': this.clientID,
+      'client_secret': this.clientSecret,
       'refresh_token': refreshToken,
     });
 
@@ -52,7 +58,12 @@ export default class {
       headers: {'Content-Type': 'application/x-www-form-urlencoded'}
     };
 
+    console.log('refreshAccessToken');
     const response = await axios.post(this.tokenUrl, params, config);
+    console.log('refresh response');
+
+    console.log(response.status);
+    console.log(response.statusText);
 
     const accessToken = response.data.access_token;
     refreshToken = response.data.refresh_token;

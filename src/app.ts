@@ -55,10 +55,17 @@ const verifySSOSecret = (req, res, next) => {
 
 // -
 
-app.post('/provision', bodyParser.json(), verifyJWT, async (req, res) => {
+app.post('/provision', bodyParser.json({
+  type(req) {
+    return true;
+  }
+}), async (req, res) => {
   const token = getTokenFromHeader(req)
 
   try {
+    console.log("provisioning ###")
+    console.log(req.body.app_slug)
+    console.log(req.body)
     const appSlug = req.body.app_slug
 
     await oidc.exchangeToken(appSlug, token);
@@ -74,11 +81,16 @@ app.post('/provision', bodyParser.json(), verifyJWT, async (req, res) => {
 
 // -
 
-app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, (req, res) => {
+app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, async(req, res) => {
+  console.log("ide")
   const appSlug = req.body.app_slug
+
+  console.log(appSlug)
+
   const apiClient = new ApiClient(appSlug, oidc, tokenStore);
 
-  const { data } = apiClient.getApp();
+  const { data } = await apiClient.getApp();
+  console.log("ide3")
   figlet(`Hi from ${data['data'].title}`, (err, data) => res.send(data || '').status(err ? 500 : 200).end());
 });
 
