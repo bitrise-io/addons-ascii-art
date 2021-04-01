@@ -44,5 +44,5 @@ export default class {
       });
     }
 
-    public  getApp = async () =>  await this.axiosApiInstance.get(`${apiBaseURL}/apps/${this.appSlug}`);
+    public getApp = async () => await this.axiosApiInstance.get(`${apiBaseURL}/apps/${this.appSlug}`);
   };
