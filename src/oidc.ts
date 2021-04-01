@@ -36,12 +36,12 @@ export default class {
     const accessToken = response.data.access_token;
     const refreshToken = response.data.refresh_token;
 
-    this.tokenStore.storeTokensInRedis(appSlug, { accessToken: accessToken, refreshToken: refreshToken })
+    this.tokenStore.storeTokensInRedis({ accessToken: accessToken, refreshToken: refreshToken })
 
     return { accessToken, refreshToken };
   };
 
-  public refreshAccessToken = async(appSlug: string, refreshToken: string): Promise<Tokens> => {
+  public refreshAccessToken = async(refreshToken: string): Promise<Tokens> => {
     const params = new URLSearchParams({
       'grant_type': 'refresh_token',
       'client_id': this.clientID,
@@ -57,7 +57,7 @@ export default class {
     const accessToken = response.data.access_token;
     refreshToken = response.data.refresh_token;
 
-    this.tokenStore.storeTokensInRedis(appSlug, { accessToken: accessToken, refreshToken: refreshToken })
+    this.tokenStore.storeTokensInRedis({ accessToken: accessToken, refreshToken: refreshToken })
 
     return { accessToken, refreshToken };
   }

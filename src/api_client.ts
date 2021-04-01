@@ -7,17 +7,15 @@ const apiBaseURL = process.env.API_BASE_URL || 'https://api.bitrise.io/v0.2'
 
 export default class {
   private axiosApiInstance: any;
-  private appSlug: string;
   private tokenStore: TokenStore;
 
-  constructor(appSlug: string, oidc: OIDC, tokenStore: TokenStore) {
+  constructor(oidc: OIDC, tokenStore: TokenStore) {
     this.axiosApiInstance = axios.create();
-    this.appSlug = appSlug;
     this.tokenStore = tokenStore;
 
     this.axiosApiInstance.interceptors.request.use(
       async config => {
-        let tokens = await this.tokenStore.retrieveTokensFromStore(this.appSlug);
+        let tokens = await this.tokenStore.retrieveTokensFromStore();
 
         config.headers['Authorization'] = `Bearer ${tokens.accessToken}`;
         return config;
@@ -32,9 +30,9 @@ export default class {
         if (error.response && error.response.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
 
-          let tokens = await tokenStore.retrieveTokensFromStore(appSlug)
+          let tokens = await tokenStore.retrieveTokensFromStore();
 
-          const { refreshToken, accessToken } = await oidc.refreshAccessToken(appSlug, tokens.refreshToken);
+          const { refreshToken, accessToken } = await oidc.refreshAccessToken(tokens.refreshToken);
 
           originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
           return axios.request(originalRequest);
@@ -44,5 +42,5 @@ export default class {
       });
     }
 
-    public getApp = async () => await this.axiosApiInstance.get(`${apiBaseURL}/apps/${this.appSlug}`);
+    public getApp = async (appSlug: string) => await this.axiosApiInstance.get(`${apiBaseURL}/apps/${appSlug}`);
   };

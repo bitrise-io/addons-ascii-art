@@ -21,6 +21,7 @@ const authBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise
 const redisClient = redis.createClient(redisUrl);
 const tokenStore = new TokenStore(redisClient)
 const oidc = new OIDC(authBaseURL, clientID, clientSecret, tokenStore);
+const apiClient = new ApiClient(oidc, tokenStore);
 
 //
 // Routes
@@ -45,11 +46,11 @@ const verifySSOSecret = (req, res, next) => {
 
   const hash = crypto.createHash('sha1');
   hash.update(`${app_slug}:${ssoSecret}:${timestamp}`);
-  
+
   if (hash.digest('hex') !== token) {
     return res.status(401).end();
   }
-  
+
   next();
 };
 
@@ -80,10 +81,15 @@ app.post('/provision', bodyParser.json({
 
 app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, async(req, res) => {
   const appSlug = req.body.app_slug
-  const apiClient = new ApiClient(appSlug, oidc, tokenStore);
+  const { data } = await apiClient.getApp(appSlug);
 
-  const { data } = await apiClient.getApp();
-  figlet(`Hi from ${data['data'].title}`, (err, data) => res.send('<pre>' + data.replace(/\n/g, '<br />') || '').status(err ? 500 : 200).end());
+  figlet(`Hi from ${data['data'].title}`, (err, text: string) => {
+    if (err) {
+      return res.status(500).end();
+    }
+
+    res.send(`<pre>${text.replace(/\n/g, '<br />')}</pre>`).end();
+  });
 });
 
 // -
