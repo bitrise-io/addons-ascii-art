@@ -6,19 +6,21 @@ import figlet from 'figlet';
 import crypto from 'crypto';
 import OIDC from './oidc';
 import ApiClient from './api_client';
-import { Tokens } from './types';
+import TokenStore from './token_store';
+import redis from 'redis';
 
 const app = express();
 const port = process.env.PORT || 3000;
 const clientID = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 const ssoSecret = process.env.SSO_SECRET;
+const redisUrl  = process.env.REDIS_URL;
 
 const authBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io'
-let tokens: Tokens = { accessToken: "", refreshToken: "" };
 
-const oidc = new OIDC(authBaseURL, clientID, clientSecret);
-const apiClient = new ApiClient(tokens, oidc);
+const redisClient = redis.createClient(redisUrl);
+const tokenStore = new TokenStore(redisClient)
+const oidc = new OIDC(authBaseURL, clientID, clientSecret, tokenStore);
 
 //
 // Routes
@@ -53,15 +55,19 @@ const verifySSOSecret = (req, res, next) => {
 
 // -
 
-app.post('/provision', bodyParser.json(), verifyJWT, async (req, res) => {
+app.post('/provision', bodyParser.json({
+  type(req) {
+    return true;
+  }
+}), async (req, res) => {
   const token = getTokenFromHeader(req)
 
   try {
-    const result = await oidc.exchangeToken(token);
-    tokens.accessToken = result.accessToken;
-    tokens.refreshToken = result.refreshToken;
+    const appSlug = req.body.app_slug
 
-    res.send(`Addon provisioned for ${req.body.app_slug}`).status(200).end();
+    await oidc.exchangeToken(appSlug, token);
+
+    res.send(`Addon provisioned for ${appSlug}`).status(200).end();
   } catch(error) {
     if (error.response) {
       return res.status(error.response.status).send(error.response.data).end();
@@ -72,8 +78,12 @@ app.post('/provision', bodyParser.json(), verifyJWT, async (req, res) => {
 
 // -
 
-app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, (req, res) => {
-  res.send(`Hi ${req.body.app_slug}!`).end()
+app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, async(req, res) => {
+  const appSlug = req.body.app_slug
+  const apiClient = new ApiClient(appSlug, oidc, tokenStore);
+
+  const { data } = await apiClient.getApp();
+  figlet(`Hi from ${data['data'].title}`, (err, data) => res.send('<pre>' + data.replace(/\n/g, '<br />') || '').status(err ? 500 : 200).end());
 });
 
 // -
