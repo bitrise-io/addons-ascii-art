@@ -1,4 +1,4 @@
-#/bin/bash
+#/bin/bash -e
 IMAGE_ID=gcr.io/bitrise-platform-staging/ascii-art:latest
 
 docker build . -t $IMAGE_ID

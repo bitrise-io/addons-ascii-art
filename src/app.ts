@@ -14,8 +14,8 @@ const port = process.env.PORT || 3000;
 const clientID = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 const ssoSecret = process.env.SSO_SECRET;
-const redisUrl  = process.env.REDIS_URL;
-
+const redisUrl = process.env.REDIS_URL;
+const hashAlgorithm = process.env.HASH || 'sha-256';
 const authBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io'
 
 const redisClient = redis.createClient(redisUrl);
@@ -44,7 +44,7 @@ const verifyJWT = jwtMiddleware({
 const verifySSOSecret = (req, res, next) => {
   const { timestamp, app_slug, token } = req.body;
 
-  const hash = crypto.createHash('sha1');
+  const hash = crypto.createHash(hashAlgorithm);
   hash.update(`${app_slug}:${ssoSecret}:${timestamp}`);
 
   if (hash.digest('hex') !== token) {
