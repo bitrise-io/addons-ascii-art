@@ -2,7 +2,7 @@
 
 This addon is used for demo purposes to illustrate the addons integration flow. We'll keep this up-to-date with latest changes.
 
-![alt text][./assets/hello_world.png]
+![logo](./assets/hello_world.png)
 
 This addon gets an addon API token and use this to request Bitrise API for the current app name. Finally displays it in an ASCII art way.
 
