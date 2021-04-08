@@ -16,16 +16,17 @@ const clientSecret = process.env.CLIENT_SECRET;
 const ssoSecret = process.env.SSO_SECRET;
 const redisUrl = process.env.REDIS_URL;
 const hashAlgorithm = process.env.HASH || 'sha-256';
-const authBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io'
+const authBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io';
 
 const redisClient = redis.createClient(redisUrl);
-const tokenStore = new TokenStore(redisClient)
+const tokenStore = new TokenStore(redisClient);
 const oidc = new OIDC(authBaseURL, clientID, clientSecret, tokenStore);
 const apiClient = new ApiClient(oidc, tokenStore);
 
 //
 // Routes
 
+// Testing route not used by Bitrise system
 app.get('/', (_, res) => {
   res.send('Welcome to ASCII art').end();
 });
@@ -54,8 +55,7 @@ const verifySSOSecret = (req, res, next) => {
   next();
 };
 
-// -
-
+// Provisioner endpoint -> user added this addon for a perticular app
 app.post('/provision', bodyParser.json({
   type(req) {
     return true;
@@ -66,19 +66,25 @@ app.post('/provision', bodyParser.json({
   try {
     const appSlug = req.body.app_slug
 
+    // exchange the received token for background processing token when needed
     await oidc.exchangeToken(appSlug, token);
 
+    // do any initialization logic here for individual application
+    
+    // response with 200
     res.send(`Addon provisioned for ${appSlug}`).status(200).end();
   } catch(error) {
     if (error.response) {
       return res.status(error.response.status).send(error.response.data).end();
     }
+    
+    // in case of error during addon provisioning it would be retried later with exponential backoff
     res.status(400).end();
   }
 });
 
-// -
-
+// SSO login endpoint -> user opened this addon via bitrise console
+// NOTE: this implementation is subject to change in the future
 app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, async(req, res) => {
   const appSlug = req.body.app_slug
   const { data } = await apiClient.getApp(appSlug);
@@ -92,8 +98,7 @@ app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, a
   });
 });
 
-// -
-
+// Delete endpoint -> user removed this addon from a particular app
 app.delete('/provision/:app_slug', bodyParser.json(), verifyJWT, (req, res) => {
   res.send(`Clearing any ${req.params.app_slug} data...`).status(200).end();
 });
