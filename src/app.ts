@@ -56,11 +56,7 @@ const verifySSOSecret = (req, res, next) => {
 };
 
 // Provisioner endpoint -> user added this addon for a perticular app
-app.post('/provision', bodyParser.json({
-  type(req) {
-    return true;
-  }
-}), async (req, res) => {
+app.post('/provision', bodyParser.json({ type(req) { return true; }}), verifyJWT, async (req, res) => {
   const token = getTokenFromHeader(req)
 
   try {
@@ -70,14 +66,14 @@ app.post('/provision', bodyParser.json({
     await oidc.exchangeToken(appSlug, token);
 
     // do any initialization logic here for individual application
-    
+
     // response with 200
     res.send(`Addon provisioned for ${appSlug}`).status(200).end();
   } catch(error) {
     if (error.response) {
       return res.status(error.response.status).send(error.response.data).end();
     }
-    
+
     // in case of error during addon provisioning it would be retried later with exponential backoff
     res.status(400).end();
   }
@@ -110,9 +106,9 @@ app.listen(port, () => {
   return console.log(`server is listening on ${port}`);
 });
 
-let getTokenFromHeader = (req: any): string | undefined => {
+const getTokenFromHeader = (req: any): string | undefined => {
   const bearerPrefixLen = 'bearer '.length
-  let token = req.headers.authorization
+  const token = req.headers.authorization
 
   if (!token || token.length < bearerPrefixLen) {
     return undefined;
