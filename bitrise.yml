@@ -11,4 +11,4 @@ workflows:
     steps:
     - script@1:
         inputs:
-        - content: yarn install && yarn dev
+        - content: yarn dev
