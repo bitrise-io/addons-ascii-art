@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Tokens } from './types';
+import { UserToken, Tokens } from './types';
 
 import TokenStore from './token_store';
 
@@ -12,7 +12,7 @@ export default class {
   private tokenStore: TokenStore;
 
   constructor(tokenBaseURL: string, clientID: string, clientSecret: string, tokenStore: TokenStore) {
-    this.tokenUrl = `${tokenBaseURL}/auth/realms/addons/protocol/openid-connect/token`;
+    this.tokenUrl = `${tokenBaseURL}/auth/realms/master/protocol/openid-connect/token`;
     this.clientID = clientID;
     this.clientSecret = clientSecret;
     this.tokenStore = tokenStore;
@@ -36,9 +36,31 @@ export default class {
     const accessToken = response.data.access_token;
     const refreshToken = response.data.refresh_token;
 
-    this.tokenStore.storeTokensInRedis({ accessToken: accessToken, refreshToken: refreshToken })
+    this.tokenStore.storeTokensInRedis({ accessToken: accessToken, refreshToken: refreshToken });
 
     return { accessToken, refreshToken };
+  };
+
+  public authorizationGrant = async (authCode: string, redirectUri: string): Promise<UserToken> => {
+    const params = new URLSearchParams({
+      'grant_type': 'authorization_code',
+      'code': authCode,
+      'client_id': this.clientID,
+      'client_secret': this.clientSecret,
+      'redirect_uri': redirectUri,
+    });
+
+    const config = {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    };
+
+    const response = await axios.post(this.tokenUrl, params, config);
+
+    const accessToken = response.data.access_token;
+    const refreshToken = response.data.refresh_token;
+    const idToken = response.data.id_token;
+
+    return { accessToken, refreshToken, idToken };
   };
 
   public refreshAccessToken = async(refreshToken: string): Promise<Tokens> => {

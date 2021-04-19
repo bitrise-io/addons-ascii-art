@@ -31,6 +31,18 @@ app.get('/', (_, res) => {
   res.send('Welcome to ASCII art').end();
 });
 
+app.get('/login-auth-code', async (req, res) => {
+  let userToken = {};
+
+  try {
+    userToken = await oidc.authorizationGrant(req.query.code as string, 'http://localhost:3000/test');
+  } catch(e) {
+    console.log(e);
+  }
+
+  res.send(userToken).end();
+});
+
 const verifyJWT = jwtMiddleware({
   algorithms: ["RS256"],
   issuer: `${authBaseURL}/auth/realms/addons`,
