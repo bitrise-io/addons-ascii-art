@@ -3,7 +3,7 @@ import { Tokens } from './types';
 import OIDC from './oidc';
 import TokenStore from './token_store';
 
-const apiBaseURL = process.env.API_BASE_URL || 'https://api.bitrise.io/v0.2'
+const apiBaseURL = process.env.API_BASE_URL || 'https://bitrise-api-staging.herokuapp.com/v0.2'
 
 export default class {
   private axiosApiInstance: any;
@@ -43,4 +43,16 @@ export default class {
     }
 
     public getApp = async (appSlug: string) => await this.axiosApiInstance.get(`${apiBaseURL}/apps/${appSlug}`);
+    
+    public getMe = async (userToken: string) => {
+      const instance = axios.create();
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        }
+      }
+
+      return await instance.get(`${apiBaseURL}/me`, config);
+    }
   };

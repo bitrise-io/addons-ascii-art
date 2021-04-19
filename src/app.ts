@@ -23,12 +23,21 @@ const tokenStore = new TokenStore(redisClient);
 const oidc = new OIDC(authBaseURL, clientID, clientSecret, tokenStore);
 const apiClient = new ApiClient(oidc, tokenStore);
 
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
+
 //
 // Routes
 
 // Testing route not used by Bitrise system
 app.get('/', (_, res) => {
-  res.send('Welcome to ASCII art').end();
+  const tempToken = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ0dG80NS1qSzBFOURQa2huN2R2TVMzRUhWVXFsVUdoVERLcUJjdDlNNDRVIn0.eyJleHAiOjE2MTg4NDQ4ODgsImlhdCI6MTYxODgzNzY4OCwianRpIjoiMGVkNmNiNmUtOWIxYy00MTgxLWJmNDQtZGFmM2NjZjNkZWQxIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLnNlcnZpY2VzLmJpdHJpc2UuZGV2L2F1dGgvcmVhbG1zL2FkZG9ucyIsImF1ZCI6ImJpdHJpc2UiLCJzdWIiOiI2YTJkM2JhMy03N2UxLTQyYmYtYTk2Yi1jNGQ2ZjY5OWM4ZWMiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJiaXRyaXNlIiwic2Vzc2lvbl9zdGF0ZSI6IjQxOTRhNzYzLTRlMTQtNGZjNy1hNWVmLWU1ZTdlYjgzNTE2OSIsImFjciI6IjEiLCJzY29wZSI6IiIsInVzZXJfaWQiOiIzNDcyODVmZjMyZWVkMTU4In0.n600dc2GcPmhBugy595YQUFonQbET_OM4E6gVIqgTem4sYkf0FpLH_VMDVwHW4dTD3z-yygIGQWfZh-XJEveOgn9BfmR-rh9dpgCl6xq8xh2Y9xg-fR54EgHh20l9w4kzBaCi1A-NUOCX1QMW50D9OKq-zstuB5oLswjCWGWdafVOfN-ZmUdW2GUWxUWw6kohmv2ZGFCyPDz5GfOrl2tf8jkKVXuJNfvcxJFMHFP6SH6bjXFdA0rg4Ox2M54PAk2vfmRLUAEOG8l5XDvW26kdm7zU2OHznuTgKSCqdVKYWHny-_Wdgt7vWida2NLVQLtGXid4evrZLdOCNFlJLMNeQ"
+  res.writeHead(200, {
+    "Set-Cookie": `${tempToken}; HttpsOnly`,
+    "Access-Control-Allow-Credentials": "true"
+  });
+
+  res.end("hello")
 });
 
 const verifyJWT = jwtMiddleware({
@@ -84,14 +93,39 @@ app.post('/provision', bodyParser.json({ type(req) { return true; }}), verifyJWT
 app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, async(req, res) => {
   const appSlug = req.body.app_slug
   const { data } = await apiClient.getApp(appSlug);
+  const userToken =  req.body.user_token
 
   figlet(`Hi from ${data['data'].title}`, (err, text: string) => {
     if (err) {
       return res.status(500).end();
     }
-
-    res.send(`<pre>${text.replace(/\n/g, '<br />')}</pre>`).end();
+    
+    if (userToken) {
+      console.log("user flow")
+      console.log(userToken)
+      res.writeHead(200, {
+        "Set-Cookie": `token=${userToken}; HttpsOnly`,
+        "Access-Control-Allow-Credentials": "true"
+      });
+    }
+    
+    res.end(`<pre>${text.replace(/\n/g, '<br />')}</pre>`);
   });
+});
+
+app.get('/me', async(req, res) => {
+  const token = req.cookies.token || '';
+  
+  if (!token) {
+    return res.status(401).send();
+  }
+
+  const { data } = await apiClient.getMe(token);
+
+  if (!data) {
+    return res.send("Error").end();
+  }
+  res.end(data);
 });
 
 // Delete endpoint -> user removed this addon from a particular app
