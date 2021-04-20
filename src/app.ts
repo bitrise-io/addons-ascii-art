@@ -18,8 +18,8 @@ const redisUrl = process.env.REDIS_URL;
 const hashAlgorithm = process.env.HASH || 'sha-256';
 const authBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io';
 
-const redisClient = redis.createClient(redisUrl);
-const tokenStore = new TokenStore(redisClient);
+// const redisClient = redis.createClient(redisUrl);
+const tokenStore = new TokenStore(null);
 const oidc = new OIDC(authBaseURL, clientID, clientSecret, tokenStore);
 const apiClient = new ApiClient(oidc, tokenStore);
 
@@ -31,13 +31,17 @@ app.use(cookieParser());
 
 // Testing route not used by Bitrise system
 app.get('/', (_, res) => {
-  const tempToken = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ0dG80NS1qSzBFOURQa2huN2R2TVMzRUhWVXFsVUdoVERLcUJjdDlNNDRVIn0.eyJleHAiOjE2MTg4NDQ4ODgsImlhdCI6MTYxODgzNzY4OCwianRpIjoiMGVkNmNiNmUtOWIxYy00MTgxLWJmNDQtZGFmM2NjZjNkZWQxIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLnNlcnZpY2VzLmJpdHJpc2UuZGV2L2F1dGgvcmVhbG1zL2FkZG9ucyIsImF1ZCI6ImJpdHJpc2UiLCJzdWIiOiI2YTJkM2JhMy03N2UxLTQyYmYtYTk2Yi1jNGQ2ZjY5OWM4ZWMiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJiaXRyaXNlIiwic2Vzc2lvbl9zdGF0ZSI6IjQxOTRhNzYzLTRlMTQtNGZjNy1hNWVmLWU1ZTdlYjgzNTE2OSIsImFjciI6IjEiLCJzY29wZSI6IiIsInVzZXJfaWQiOiIzNDcyODVmZjMyZWVkMTU4In0.n600dc2GcPmhBugy595YQUFonQbET_OM4E6gVIqgTem4sYkf0FpLH_VMDVwHW4dTD3z-yygIGQWfZh-XJEveOgn9BfmR-rh9dpgCl6xq8xh2Y9xg-fR54EgHh20l9w4kzBaCi1A-NUOCX1QMW50D9OKq-zstuB5oLswjCWGWdafVOfN-ZmUdW2GUWxUWw6kohmv2ZGFCyPDz5GfOrl2tf8jkKVXuJNfvcxJFMHFP6SH6bjXFdA0rg4Ox2M54PAk2vfmRLUAEOG8l5XDvW26kdm7zU2OHznuTgKSCqdVKYWHny-_Wdgt7vWida2NLVQLtGXid4evrZLdOCNFlJLMNeQ"
-  res.writeHead(200, {
-    "Set-Cookie": `${tempToken}; HttpsOnly`,
-    "Access-Control-Allow-Credentials": "true"
-  });
-
-  res.end("hello")
+  const tempToken = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmOG9jbkVNMmU3M3B4cHVoYzc5WF9hZTJnN19xdTA5WTF1dEVQbWNjdDdJIn0.eyJleHAiOjE2MTg5MjY2MjAsImlhdCI6MTYxODkxOTQyMCwianRpIjoiZWY2NzY3NzAtZWM1MC00ZjUzLWI5OGQtZDhjM2RlNGMyMjkyIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLnNlcnZpY2VzLmJpdHJpc2UuaW8vYXV0aC9yZWFsbXMvYWRkb25zIiwiYXVkIjoiYml0cmlzZS1hcGkiLCJzdWIiOiIzZDFlYmMxNi01N2ExLTQ1ZmUtOTg5Zi02YWEwYWE2NWVkNDIiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJiaXRyaXNlIiwic2Vzc2lvbl9zdGF0ZSI6IjM1Y2M0ZWRmLTBmNDUtNGY0Ni1hYmMxLTMwMzQwNWQyMzdiMiIsImFjciI6IjEiLCJzY29wZSI6IiIsInVzZXJfaWQiOiIzNDcyODVmZjMyZWVkMTU4In0.XegCcqSqFhF5HxCx25DAv3TsIlonHEVoY9xsTb2rEXF4KaIyZpAc06nujddZTk24wmRTzZJRDpT4-XgrR_IzLZ-gU_S06ALX7-u8Vfq69PjUjxCie9LFjZ4eM-MEy5sUzR6gRqGtnXGvKbeXoegoOr_abiC0cgkooI1q-nwfuh0tD7U8rDzfGgs5Yxesg5ktcaqvDN3qTjvTNtCa6tsFjimlup-G-TPdkkqOxds4ShCed5hQd5rIKoiN7FkwnPlCgh63SUDHbaJ50uEN9CrKjJchdtTT1vsTpdFXiDmx4vLDqET4yfX0ljSuLP_MQLsoLRLlntf_7w8-zZ8_8e4qKQ"
+  
+  const cookieConfig = {
+    httpsOnly: true, // to disable accessing cookie via client side js
+    //secure: true, // to force https (if you use it)
+    maxAge: 5000, // ttl in seconds (remove this option and cookie will die when browser is closed)
+    signed: true // if you use the secret with cookieParser
+  };
+  
+  res.cookie('token', tempToken, cookieConfig);
+  res.send("hello")
 });
 
 const verifyJWT = jwtMiddleware({
@@ -103,13 +107,16 @@ app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, a
     if (userToken) {
       console.log("user flow")
       console.log(userToken)
-      res.writeHead(200, {
-        "Set-Cookie": `token=${userToken}; HttpsOnly`,
-        "Access-Control-Allow-Credentials": "true"
-      });
+      const cookieConfig = {
+        httpsOnly: true,
+        maxAge: 5000,
+        signed: true
+      };
+      
+      res.cookie('token', userToken, cookieConfig);
     }
     
-    res.end(`<pre>${text.replace(/\n/g, '<br />')}</pre>`);
+    res.send(`<pre>${text.replace(/\n/g, '<br />')}</pre>`).end();
   });
 });
 
@@ -125,7 +132,7 @@ app.get('/me', async(req, res) => {
   if (!data) {
     return res.send("Error").end();
   }
-  res.end(data);
+  res.send(data).end();
 });
 
 // Delete endpoint -> user removed this addon from a particular app

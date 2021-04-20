@@ -3,7 +3,7 @@ import { Tokens } from './types';
 import OIDC from './oidc';
 import TokenStore from './token_store';
 
-const apiBaseURL = process.env.API_BASE_URL || 'https://api.bitrise.io//v0.2'
+const apiBaseURL = process.env.API_BASE_URL || 'https://api.bitrise.io/v0.2'
 
 export default class {
   private axiosApiInstance: any;
