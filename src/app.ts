@@ -18,8 +18,8 @@ const redisUrl = process.env.REDIS_URL;
 const hashAlgorithm = process.env.HASH || 'sha-256';
 const authBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io';
 
-// const redisClient = redis.createClient(redisUrl);
-const tokenStore = new TokenStore(null);
+const redisClient = redis.createClient(redisUrl);
+const tokenStore = new TokenStore(redisClient);
 const oidc = new OIDC(authBaseURL, clientID, clientSecret, tokenStore);
 const apiClient = new ApiClient(oidc, tokenStore);
 
@@ -34,10 +34,8 @@ app.get('/', (_, res) => {
   const tempToken = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmOG9jbkVNMmU3M3B4cHVoYzc5WF9hZTJnN19xdTA5WTF1dEVQbWNjdDdJIn0.eyJleHAiOjE2MTg5MjY2MjAsImlhdCI6MTYxODkxOTQyMCwianRpIjoiZWY2NzY3NzAtZWM1MC00ZjUzLWI5OGQtZDhjM2RlNGMyMjkyIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLnNlcnZpY2VzLmJpdHJpc2UuaW8vYXV0aC9yZWFsbXMvYWRkb25zIiwiYXVkIjoiYml0cmlzZS1hcGkiLCJzdWIiOiIzZDFlYmMxNi01N2ExLTQ1ZmUtOTg5Zi02YWEwYWE2NWVkNDIiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJiaXRyaXNlIiwic2Vzc2lvbl9zdGF0ZSI6IjM1Y2M0ZWRmLTBmNDUtNGY0Ni1hYmMxLTMwMzQwNWQyMzdiMiIsImFjciI6IjEiLCJzY29wZSI6IiIsInVzZXJfaWQiOiIzNDcyODVmZjMyZWVkMTU4In0.XegCcqSqFhF5HxCx25DAv3TsIlonHEVoY9xsTb2rEXF4KaIyZpAc06nujddZTk24wmRTzZJRDpT4-XgrR_IzLZ-gU_S06ALX7-u8Vfq69PjUjxCie9LFjZ4eM-MEy5sUzR6gRqGtnXGvKbeXoegoOr_abiC0cgkooI1q-nwfuh0tD7U8rDzfGgs5Yxesg5ktcaqvDN3qTjvTNtCa6tsFjimlup-G-TPdkkqOxds4ShCed5hQd5rIKoiN7FkwnPlCgh63SUDHbaJ50uEN9CrKjJchdtTT1vsTpdFXiDmx4vLDqET4yfX0ljSuLP_MQLsoLRLlntf_7w8-zZ8_8e4qKQ"
   
   const cookieConfig = {
-    httpsOnly: true, // to disable accessing cookie via client side js
     //secure: true, // to force https (if you use it)
-    maxAge: 5000, // ttl in seconds (remove this option and cookie will die when browser is closed)
-    signed: true // if you use the secret with cookieParser
+    signed: false // if you use the secret with cookieParser
   };
   
   res.cookie('token', tempToken, cookieConfig);
@@ -99,29 +97,34 @@ app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, a
   const { data } = await apiClient.getApp(appSlug);
   const userToken =  req.body.user_token
 
+  console.log("logging in")
+  console.log(req.body)
+    
+  if (userToken) {
+    console.log("user flow")
+    console.log(userToken)
+    const cookieConfig = {
+      signed: false
+    };
+    res.cookie('token', userToken, cookieConfig);
+  }
+
   figlet(`Hi from ${data['data'].title}`, (err, text: string) => {
     if (err) {
       return res.status(500).end();
     }
     
-    if (userToken) {
-      console.log("user flow")
-      console.log(userToken)
-      const cookieConfig = {
-        httpsOnly: true,
-        maxAge: 5000,
-        signed: true
-      };
-      
-      res.cookie('token', userToken, cookieConfig);
-    }
-    
-    res.send(`<pre>${text.replace(/\n/g, '<br />')}</pre>`).end();
+    res.end(`<pre>${text.replace(/\n/g, '<br />')}</pre>`);
   });
 });
 
 app.get('/me', async(req, res) => {
   const token = req.cookies.token || '';
+
+  console.log("ME")
+  console.log(req.cookies.token)
+  console.log("signed")
+  console.log(req.signedCookies)
   
   if (!token) {
     return res.status(401).send();
