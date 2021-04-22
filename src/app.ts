@@ -24,6 +24,9 @@ const tokenStore = new TokenStore(redisClient);
 const oidc = new OIDC(authBaseURL, realm, clientID, clientSecret, tokenStore);
 const apiClient = new ApiClient(oidc, tokenStore);
 
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
+
 //
 // Routes
 
@@ -98,14 +101,37 @@ app.post('/provision', bodyParser.json({ type(req) { return true; }}), verifyJWT
 app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, async(req, res) => {
   const appSlug = req.body.app_slug
   const { data } = await apiClient.getApp(appSlug);
+  const userToken =  req.body.user_token
+    
+  if (userToken) {
+    const cookieConfig = {
+      signed: false
+    };
+    res.cookie('token', userToken, cookieConfig);
+  }
 
   figlet(`Hi from ${data['data'].title}`, (err, text: string) => {
     if (err) {
       return res.status(500).end();
     }
 
-    res.send(`<pre>${text.replace(/\n/g, '<br />')}</pre>`).end();
+    res.end(`<pre>${text.replace(/\n/g, '<br />')}</pre>`);
   });
+});
+
+app.get('/me', async(req, res) => {
+  const token = req.cookies.token || '';
+  
+  if (!token) {
+    return res.status(401).send();
+  }
+
+  const { data } = await apiClient.getMe(token);
+
+  if (!data) {
+    return res.send("Error").end();
+  }
+  res.send(data).end();
 });
 
 // Delete endpoint -> user removed this addon from a particular app

@@ -43,4 +43,16 @@ export default class {
     }
 
     public getApp = async (appSlug: string) => await this.axiosApiInstance.get(`${apiBaseURL}/apps/${appSlug}`);
+    
+    public getMe = async (userToken: string) => {
+      const instance = axios.create();
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        }
+      }
+
+      return await instance.get(`${apiBaseURL}/me`, config);
+    }
   };
