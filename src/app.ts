@@ -104,12 +104,12 @@ app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, a
 
 app.get('/login-auth-code', async (req, res) => {
   let userToken: UserToken = null;
-  const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  const fullUrl = `${req.protocol}://${req.get('host')}/login-auth-code`;
 
   try {
     userToken = await oidc.authorizationGrant(req.query.code as string, fullUrl);
   } catch(e) {
-    console.log(e.response);
+    return console.log(e.response);
   }
 
   res.cookie('token', userToken.accessToken, { signed: false });
