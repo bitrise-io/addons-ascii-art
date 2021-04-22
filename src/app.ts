@@ -65,15 +65,13 @@ app.post('/provision', bodyParser.json({ type(req) { return true; }}), verifyJWT
   const token = getTokenFromHeader(req)
 
   try {
-    const appSlug = req.body.app_slug
-
     // exchange the received token for background processing token when needed
-    await oidc.exchangeToken(appSlug, token);
+    await oidc.exchangeToken(token);
 
     // do any initialization logic here for individual application
 
     // response with 200
-    res.send(`Addon provisioned for ${appSlug}`).status(200).end();
+    res.send(`Addon provisioned for ${req.body.app_slug}`).status(200).end();
   } catch(error) {
     if (error.response) {
       return res.status(error.response.status).send(error.response.data).end();

@@ -18,7 +18,7 @@ export default class {
     this.tokenStore = tokenStore;
   }
 
-  public exchangeToken = async (appSlug: string, token: string): Promise<Tokens> => {
+  public exchangeToken = async (token: string): Promise<Tokens> => {
     const params = new URLSearchParams({
       'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
       'client_id': this.clientID,
