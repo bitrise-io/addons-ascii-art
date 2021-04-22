@@ -8,6 +8,7 @@ import OIDC from './oidc';
 import ApiClient from './api_client';
 import TokenStore from './token_store';
 import redis from 'redis';
+import { UserToken } from './types';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -33,19 +34,6 @@ app.use(cookieParser());
 // Testing route not used by Bitrise system
 app.get('/', (_, res) => {
   res.send('Welcome to ASCII art').end();
-});
-
-app.get('/login-auth-code', async (req, res) => {
-  let userToken = {};
-
-  try {
-    userToken = await oidc.authorizationGrant(req.query.code as string, 'http://localhost:3000/login-auth-code');
-  } catch(e) {
-    console.log(e);
-    console.log(e.response);
-  }
-
-  res.send(userToken).end();
 });
 
 const verifyJWT = jwtMiddleware({
@@ -102,12 +90,9 @@ app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, a
   const appSlug = req.body.app_slug
   const { data } = await apiClient.getApp(appSlug);
   const userToken =  req.body.user_token
-    
+
   if (userToken) {
-    const cookieConfig = {
-      signed: false
-    };
-    res.cookie('token', userToken, cookieConfig);
+    res.cookie('token', userToken, { signed: false });
   }
 
   figlet(`Hi from ${data['data'].title}`, (err, text: string) => {
@@ -119,9 +104,23 @@ app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, a
   });
 });
 
+app.get('/login-auth-code', async (req, res) => {
+  let userToken: UserToken = null;
+  const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+
+  try {
+    userToken = await oidc.authorizationGrant(req.query.code as string, fullUrl);
+  } catch(e) {
+    console.log(e.response);
+  }
+
+  res.cookie('token', userToken.accessToken, { signed: false });
+  res.redirect('/me');
+});
+
 app.get('/me', async(req, res) => {
   const token = req.cookies.token || '';
-  
+
   if (!token) {
     return res.status(401).send();
   }
