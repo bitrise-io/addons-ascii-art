@@ -39,6 +39,7 @@ app.get('/login-auth-code', async (req, res) => {
     userToken = await oidc.authorizationGrant(req.query.code as string, 'http://localhost:3000/test');
   } catch(e) {
     console.log(e);
+    console.log(e.response);
   }
 
   res.send(userToken).end();
