@@ -100,7 +100,7 @@ app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, a
     if (err) {
       return res.status(500).end();
     }
-    
+
     res.end(`<pre>${text.replace(/\n/g, '<br />')}</pre>`);
   });
 });
