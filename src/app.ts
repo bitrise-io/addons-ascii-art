@@ -108,8 +108,9 @@ app.get('/login-auth-code', async (req, res) => {
 
   try {
     userToken = await oidc.authorizationGrant(req.query.code as string, fullUrl);
-  } catch(e) {
-    return console.log(e.response);
+  } catch(error) {
+    console.log(error.response);
+    return res.status(error.response.status).send(error.response.data).end();
   }
 
   res.cookie('token', userToken.accessToken, { signed: false });
@@ -123,12 +124,13 @@ app.get('/me', async(req, res) => {
     return res.status(401).send();
   }
 
-  const { data } = await apiClient.getMe(token);
-
-  if (!data) {
-    return res.send("Error").end();
+  try {
+    const { data } = await apiClient.getMe(token);
+    res.send(data).end();
+  } catch(error) {
+    console.log(error.response);
+    return res.status(error.response.status).send(`token: ${token} ${error.response}`).end();
   }
-  res.send(data).end();
 });
 
 // Delete endpoint -> user removed this addon from a particular app
