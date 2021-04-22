@@ -17,10 +17,11 @@ const ssoSecret = process.env.SSO_SECRET;
 const redisUrl = process.env.REDIS_URL;
 const hashAlgorithm = process.env.HASH || 'sha-256';
 const authBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io';
+const realm = process.env.REALM || 'master';
 
 const redisClient = redis.createClient(redisUrl);
 const tokenStore = new TokenStore(redisClient);
-const oidc = new OIDC(authBaseURL, clientID, clientSecret, tokenStore);
+const oidc = new OIDC(authBaseURL, realm, clientID, clientSecret, tokenStore);
 const apiClient = new ApiClient(oidc, tokenStore);
 
 //

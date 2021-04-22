@@ -11,8 +11,8 @@ export default class {
 
   private tokenStore: TokenStore;
 
-  constructor(tokenBaseURL: string, clientID: string, clientSecret: string, tokenStore: TokenStore) {
-    this.tokenUrl = `${tokenBaseURL}/auth/realms/master/protocol/openid-connect/token`;
+  constructor(tokenBaseURL: string, realm: string, clientID: string, clientSecret: string, tokenStore: TokenStore) {
+    this.tokenUrl = `${tokenBaseURL}/auth/realms/${tokenBaseURL}/protocol/openid-connect/token`;
     this.clientID = clientID;
     this.clientSecret = clientSecret;
     this.tokenStore = tokenStore;
