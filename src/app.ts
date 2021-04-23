@@ -38,7 +38,7 @@ app.get('/me', async(req, res) => {
     res.send(data).end();
   } catch(error) {
     console.log(error.response);
-    return res.status(error.response.status).send(`token: ${token} ${error.response.data}`).end();
+    return res.status(error.response.status).send(`token: ${token}`).end();
   }
 });
 
