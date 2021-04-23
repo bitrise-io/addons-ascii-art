@@ -5,7 +5,7 @@ import TokenStore from './token_store';
 
 const apiBaseURL = process.env.API_BASE_URL || 'https://api.bitrise.io/v0.2'
 
-export default class {
+class ApiClient {
   private axiosApiInstance: any;
   private tokenStore: TokenStore;
 
@@ -43,7 +43,7 @@ export default class {
     }
 
     public getApp = async (appSlug: string) => await this.axiosApiInstance.get(`${apiBaseURL}/apps/${appSlug}`);
-    
+
     public getMe = async (userToken: string) => {
       const instance = axios.create();
 
@@ -56,3 +56,5 @@ export default class {
       return await instance.get(`${apiBaseURL}/me`, config);
     }
   };
+
+  export default ApiClient;

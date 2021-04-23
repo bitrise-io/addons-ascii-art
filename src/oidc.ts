@@ -3,7 +3,7 @@ import { UserToken, Tokens } from './types';
 
 import TokenStore from './token_store';
 
-export default class {
+class OIDCClient {
   private tokenUrl: string;
 
   private clientID: string;
@@ -83,4 +83,6 @@ export default class {
 
     return { accessToken, refreshToken };
   }
-}
+};
+
+export default OIDCClient;
