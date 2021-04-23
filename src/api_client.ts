@@ -40,21 +40,19 @@ class ApiClient {
 
         return Promise.reject(error);
       });
-    }
+  }
 
-    public getApp = async (appSlug: string) => await this.axiosApiInstance.get(`${apiBaseURL}/apps/${appSlug}`);
+  public getApp = async (appSlug: string) => await this.axiosApiInstance.get(`${apiBaseURL}/apps/${appSlug}`);
 
-    public getMe = async (userToken: string) => {
-      const instance = axios.create();
+  public getMe = async (userToken: string) => {
+    const instance = axios.create();
 
-      const config = {
-        headers: {
-          Authorization: `Bearer ${userToken}`,
-        }
-      }
+    const config = {
+      headers: { Authorization: `Bearer ${userToken}` }
+    };
 
-      return await instance.get(`${apiBaseURL}/me`, config);
-    }
-  };
+    return await instance.get(`${apiBaseURL}/me`, config);
+  }
+};
 
   export default ApiClient;
