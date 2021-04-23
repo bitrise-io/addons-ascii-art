@@ -41,7 +41,7 @@ export default class {
     return { accessToken, refreshToken };
   };
 
-  public authorizationGrant = async (authCode: string, redirectUri: string): Promise<UserToken> => {
+  public authorizationCodeGrant = async (authCode: string, redirectUri: string): Promise<UserToken> => {
     const params = new URLSearchParams({
       'grant_type': 'authorization_code',
       'code': authCode,

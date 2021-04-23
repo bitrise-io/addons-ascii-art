@@ -107,7 +107,7 @@ app.get('/login-auth-code', async (req, res) => {
   const fullUrl = `${req.protocol}://${req.get('host')}/login-auth-code`;
 
   try {
-    userToken = await oidc.authorizationGrant(req.query.code as string, fullUrl);
+    userToken = await oidc.authorizationCodeGrant(req.query.code as string, fullUrl);
   } catch(error) {
     console.log(error.response);
     return res.status(error.response.status).send(error.response.data).end();
