@@ -5,7 +5,7 @@ import TokenStore from './token_store';
 
 const apiBaseURL = process.env.API_BASE_URL || 'https://api.bitrise.io/v0.2'
 
-export default class {
+class ApiClient {
   private axiosApiInstance: any;
   private tokenStore: TokenStore;
 
@@ -40,19 +40,19 @@ export default class {
 
         return Promise.reject(error);
       });
-    }
+  }
 
-    public getApp = async (appSlug: string) => await this.axiosApiInstance.get(`${apiBaseURL}/apps/${appSlug}`);
-    
-    public getMe = async (userToken: string) => {
-      const instance = axios.create();
+  public getApp = async (appSlug: string) => await this.axiosApiInstance.get(`${apiBaseURL}/apps/${appSlug}`);
 
-      const config = {
-        headers: {
-          Authorization: `Bearer ${userToken}`,
-        }
-      }
+  public getMe = async (userToken: string) => {
+    const instance = axios.create();
 
-      return await instance.get(`${apiBaseURL}/me`, config);
-    }
-  };
+    const config = {
+      headers: { Authorization: `Bearer ${userToken}` }
+    };
+
+    return await instance.get(`${apiBaseURL}/me`, config);
+  }
+};
+
+  export default ApiClient;
