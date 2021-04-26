@@ -3,6 +3,7 @@ import OIDC from './oidc';
 import ApiClient from './api_client';
 import TokenStore from './token_store';
 import redis from 'redis';
+import figlet from 'figlet';
 
 import setUpBitriseAuth from './bitrise_auth';
 
@@ -35,7 +36,14 @@ app.get('/me', async(req, res) => {
 
   try {
     const { data } = await apiClient.getMe(token);
-    res.send(data).end();
+
+    figlet(`Hi ${data['data'].username}`, (err, text: string) => {
+      if (err) {
+        return res.status(500).end();
+      }
+
+      res.end(`<pre>${text.replace(/\n/g, '<br />')}</pre>`);
+    });
   } catch(error) {
     console.log(error.response);
     return res.status(error.response.status).send(`token: ${token}`).end();
