@@ -1,7 +1,6 @@
 import jwtMiddleware from 'express-jwt';
 import jwksRsa from 'jwks-rsa';
 import bodyParser from 'body-parser';
-import figlet from 'figlet';
 import crypto from 'crypto';
 
 import { Express } from 'express';
@@ -73,21 +72,15 @@ export default (app: Express, oidc: OIDCClient, apiClient: ApiClient, authBaseUR
   // SSO login endpoint -> user opened this addon via bitrise console
   // NOTE: this implementation is subject to change in the future
   app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, async(req, res) => {
-    const appSlug = req.body.app_slug
-    const { data } = await apiClient.getApp(appSlug);
     const userToken =  req.body.user_token
 
     if (userToken) {
       res.cookie('token', userToken, { signed: false });
+      res.redirect('/me');
+    } else {
+      res.status(401);
+      res.end("Unauthorized. You need to log-in first. Visit https://app.bitrise.io/users/sign_in");
     }
-
-    figlet(`Hi from ${data['data'].title}`, (err, text: string) => {
-      if (err) {
-        return res.status(500).end();
-      }
-
-      res.end(`<pre>${text.replace(/\n/g, '<br />')}</pre>`);
-    });
   });
 
   // #ALPHA: authorization code support for user login
