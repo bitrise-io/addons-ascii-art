@@ -5,7 +5,6 @@ import crypto from 'crypto';
 
 import { Express } from 'express';
 import OIDCClient from './oidc';
-import ApiClient from './api_client';
 import { UserToken } from './types';
 
 const getTokenFromHeader = (req: any): string | undefined => {
@@ -19,7 +18,7 @@ const getTokenFromHeader = (req: any): string | undefined => {
   return token.substr(bearerPrefixLen);
 };
 
-export default (app: Express, oidc: OIDCClient, apiClient: ApiClient, authBaseURL: String) => {
+export default (app: Express, oidc: OIDCClient, authBaseURL: String) => {
   const hashAlgorithm = process.env.HASH || 'sha-256';
   const ssoSecret = process.env.SSO_SECRET;
 

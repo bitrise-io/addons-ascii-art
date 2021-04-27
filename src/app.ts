@@ -24,7 +24,7 @@ const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 
 // setting up bitrise integration related endpoints
-setUpBitriseAuth(app, oidc, apiClient, authBaseURL);
+setUpBitriseAuth(app, oidc, authBaseURL);
 
 // custom endpoint for the addon, has no connection for Bitrise integration
 app.get('/me', async(req, res) => {
