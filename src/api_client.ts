@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { Tokens } from './types';
 import OIDC from './oidc';
 import TokenStore from './token_store';
 

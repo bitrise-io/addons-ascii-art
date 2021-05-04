@@ -13,7 +13,7 @@ The required addon endpoints are located in [app.ts file](./src/app.ts).
 ### Development
 
 1. Run `yarn install`
-1. Export envs: `CLIENT_ID` and `CLIENT_SECRET` (and optionally PORT, TOKEN_BASE_URL)
+1. Export envs: `CLIENT_ID` and `CLIENT_SECRET` (and optionally PORT, BITRISE_BASE_URL)
 1. Run `yarn dev`
 
 or
@@ -24,7 +24,7 @@ or
     - CLIENT_ID: ...
     - CLIENT_SECRET: ...
     - PORT: ... (optional)
-    - TOKEN_BASE_URL: ... (optional)
+    - BITRISE_BASE_URL: ... (optional)
     ```
 1. Run `bitrise run up`
 

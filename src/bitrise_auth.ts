@@ -2,6 +2,7 @@ import jwtMiddleware from 'express-jwt';
 import jwksRsa from 'jwks-rsa';
 import bodyParser from 'body-parser';
 import crypto from 'crypto';
+import { URL } from 'url';
 
 import { Express } from 'express';
 import OIDCClient from './oidc';
@@ -18,18 +19,19 @@ const getTokenFromHeader = (req: any): string | undefined => {
   return token.substr(bearerPrefixLen);
 };
 
-export default (app: Express, oidc: OIDCClient, authBaseURL: String) => {
+export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
   const hashAlgorithm = process.env.HASH || 'sha-256';
   const ssoSecret = process.env.SSO_SECRET;
+  const bUrl = new URL(bitriseUrl);
 
   const verifyJWT = jwtMiddleware({
     algorithms: ["RS256"],
-    issuer: `${authBaseURL}/auth/realms/addons`,
+    issuer: `${bUrl.hostname}/auth/realms/addons`,
     secret: jwksRsa.expressJwtSecret({
       cache: true,
       rateLimit: true,
       jwksRequestsPerMinute: 5,
-      jwksUri: `${authBaseURL}/auth/realms/addons/protocol/openid-connect/certs`
+      jwksUri: `${bitriseUrl}/addons/protocol/openid-connect/certs`
     }),
   });
 

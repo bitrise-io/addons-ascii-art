@@ -16,15 +16,15 @@ const realm = process.env.REALM || 'master';
 
 const redisClient = redis.createClient(redisUrl);
 const tokenStore = new TokenStore(redisClient);
-const authBaseURL = process.env.TOKEN_BASE_URL || 'https://auth.services.bitrise.io';
-const oidc = new OIDC(authBaseURL, realm, clientID, clientSecret, tokenStore);
+const bitriseUrl = process.env.BITRISE_BASE_URL || 'https://app.bitrise.io';
+const oidc = new OIDC(bitriseUrl, realm, clientID, clientSecret, tokenStore);
 const apiClient = new ApiClient(oidc, tokenStore);
 
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 
 // setting up bitrise integration related endpoints
-setUpBitriseAuth(app, oidc, authBaseURL);
+setUpBitriseAuth(app, oidc, bitriseUrl);
 
 // custom endpoint for the addon, has no connection for Bitrise integration
 app.get('/me', async(req, res) => {
