@@ -26,7 +26,7 @@ export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
 
   const verifyJWT = jwtMiddleware({
     algorithms: ["RS256"],
-    issuer: `${bUrl.hostname}/auth/realms/addons`,
+    issuer: `${bUrl.protocol}//${bUrl.hostname}/auth/realms/addons`,
     secret: jwksRsa.expressJwtSecret({
       cache: true,
       rateLimit: true,
