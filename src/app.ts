@@ -12,7 +12,7 @@ const port = process.env.PORT || 3000;
 const clientID = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 const redisUrl = process.env.REDIS_URL;
-const realm = process.env.REALM || 'master';
+const realm = process.env.REALM || 'addons';
 
 const redisClient = redis.createClient(redisUrl);
 const tokenStore = new TokenStore(redisClient);
@@ -22,6 +22,9 @@ const apiClient = new ApiClient(oidc, tokenStore);
 
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
+
+// to work from behind Cloud Run LB
+app.enable('trust proxy');
 
 // setting up bitrise integration related endpoints
 setUpBitriseAuth(app, oidc, bitriseUrl);

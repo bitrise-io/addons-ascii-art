@@ -8,8 +8,8 @@ import OIDCClient from './oidc';
 import { UserToken } from './types';
 
 const getTokenFromHeader = (req: any): string | undefined => {
-  const bearerPrefixLen = 'bearer '.length
-  const token = req.headers.authorization
+  const bearerPrefixLen = 'bearer '.length;
+  const token = req.headers.authorization;
 
   if (!token || token.length < bearerPrefixLen) {
     return undefined;
@@ -87,10 +87,10 @@ export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
   // #ALPHA: authorization code support for user login
   app.get('/login-auth-code', async (req, res) => {
     let userToken: UserToken = null;
-    const fullUrl = `https://${req.get('host')}/login-auth-code`;
+    const redirectUrl = `${req.protocol}://${req.get('host')}/login-auth-code`;
 
     try {
-      userToken = await oidc.authorizationCodeGrant(req.query.code as string, fullUrl);
+      userToken = await oidc.authorizationCodeGrant(req.query.code as string, redirectUrl);
     } catch(error) {
       console.log(error.response);
       return res.status(error.response.status).send(error.response.data).end();
