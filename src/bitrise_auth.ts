@@ -87,7 +87,7 @@ export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
   // #ALPHA: authorization code support for user login
   app.get('/login-auth-code', async (req, res) => {
     let userToken: UserToken = null;
-    const fullUrl = `https://${req.get('host')}/login-auth-code`;
+    const fullUrl = `${req.protocol}://${req.get('host')}/login-auth-code`;
 
     try {
       userToken = await oidc.authorizationCodeGrant(req.query.code as string, fullUrl);
