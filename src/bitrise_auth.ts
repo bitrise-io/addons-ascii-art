@@ -2,7 +2,6 @@ import jwtMiddleware from 'express-jwt';
 import jwksRsa from 'jwks-rsa';
 import bodyParser from 'body-parser';
 import crypto from 'crypto';
-import { URL } from 'url';
 
 import { Express } from 'express';
 import OIDCClient from './oidc';
@@ -22,16 +21,17 @@ const getTokenFromHeader = (req: any): string | undefined => {
 export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
   const hashAlgorithm = process.env.HASH || 'sha-256';
   const ssoSecret = process.env.SSO_SECRET;
-  const bUrl = new URL(bitriseUrl);
+
+  const issuer = `${bitriseUrl}/auth/realms/addons`;
 
   const verifyJWT = jwtMiddleware({
     algorithms: ["RS256"],
-    issuer: `${bUrl.protocol}//${bUrl.hostname}/auth/realms/addons`,
+    issuer,
     secret: jwksRsa.expressJwtSecret({
       cache: true,
       rateLimit: true,
       jwksRequestsPerMinute: 5,
-      jwksUri: `${bitriseUrl}/addons/protocol/openid-connect/certs`
+      jwksUri: `${issuer}/protocol/openid-connect/certs`
     }),
   });
 
@@ -87,7 +87,7 @@ export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
   // #ALPHA: authorization code support for user login
   app.get('/login-auth-code', async (req, res) => {
     let userToken: UserToken = null;
-    const fullUrl = `${req.protocol}://${req.get('host')}/login-auth-code`;
+    const fullUrl = `https://${req.get('host')}/login-auth-code`;
 
     try {
       userToken = await oidc.authorizationCodeGrant(req.query.code as string, fullUrl);
