@@ -8,14 +8,28 @@ class OIDCClient {
 
   private clientID: string;
   private clientSecret: string;
+  private bitriseBaseUrl: string;
+  private bitriseRealm: string;
 
   private tokenStore: TokenStore;
 
   constructor(tokenBaseURL: string, realm: string, clientID: string, clientSecret: string, tokenStore: TokenStore) {
     this.tokenUrl = `${tokenBaseURL}/auth/realms/${realm}/protocol/openid-connect/token`;
+    this.bitriseBaseUrl = tokenBaseURL;
+    this.bitriseRealm = realm;
     this.clientID = clientID;
     this.clientSecret = clientSecret;
     this.tokenStore = tokenStore;
+  }
+
+  public constructBitriseLoginUrl = (redirectUrl: string): string => {
+    const params = new URLSearchParams({
+      'response_type': 'code',
+      'client_id': this.clientID,
+      'redirect_uri': redirectUrl,
+    });
+
+    return `${this.bitriseBaseUrl}/auth/realms/${this.bitriseRealm}/protocol/openid-connect/auth?${params.toString()}`;
   }
 
   public exchangeToken = async (token: string): Promise<Tokens> => {
@@ -79,7 +93,7 @@ class OIDCClient {
     const accessToken = response.data.access_token;
     refreshToken = response.data.refresh_token;
 
-    this.tokenStore.storeTokensInRedis({ accessToken: accessToken, refreshToken: refreshToken })
+    this.tokenStore.storeTokensInRedis({ accessToken: accessToken, refreshToken: refreshToken });
 
     return { accessToken, refreshToken };
   }

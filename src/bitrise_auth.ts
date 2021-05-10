@@ -1,9 +1,8 @@
 import jwtMiddleware from 'express-jwt';
 import jwksRsa from 'jwks-rsa';
 import bodyParser from 'body-parser';
-import crypto from 'crypto';
 
-import { Express } from 'express';
+import { Express, Request, Response } from 'express';
 import OIDCClient from './oidc';
 import { UserToken } from './types';
 
@@ -19,8 +18,6 @@ const getTokenFromHeader = (req: any): string | undefined => {
 };
 
 export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
-  const hashAlgorithm = process.env.HASH || 'sha-256';
-  const ssoSecret = process.env.SSO_SECRET;
 
   const issuer = `${bitriseUrl}/auth/realms/addons`;
 
@@ -35,14 +32,14 @@ export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
     }),
   });
 
-  const verifySSOSecret = (req, res, next) => {
-    const { timestamp, app_slug, token } = req.body;
+  const constructRedirectUrl = (req: Request): string => `${req.protocol}://${req.get('host')}/login-auth-code`;
 
-    const hash = crypto.createHash(hashAlgorithm);
-    hash.update(`${app_slug}:${ssoSecret}:${timestamp}`);
+  const verifyBitriseSession = (req: Request, res: Response, next) => {
+    const token = req.cookies.token || '';
 
-    if (hash.digest('hex') !== token) {
-      return res.status(401).end();
+    if (!token) {
+      const bitriseLoginUrl = oidc.constructBitriseLoginUrl(constructRedirectUrl(req));
+      return res.redirect(bitriseLoginUrl);
     }
 
     next();
@@ -70,33 +67,25 @@ export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
     }
   });
 
-  // SSO login endpoint -> user opened this addon via bitrise console
-  // NOTE: this implementation is subject to change in the future
-  app.post('/login', bodyParser.urlencoded({ extended: true }), verifySSOSecret, async(req, res) => {
-    const userToken =  req.body.user_token
 
-    if (userToken) {
-      res.cookie('token', userToken, { signed: false });
-      res.redirect('/me');
-    } else {
-      res.status(401);
-      res.end("Unauthorized. You need to log-in first. Visit https://app.bitrise.io/users/sign_in");
-    }
-  });
-
-  // #ALPHA: authorization code support for user login
-  app.get('/login-auth-code', async (req, res) => {
+  app.get('/login-auth-code', async (req: Request, res) => {
     let userToken: UserToken = null;
-    const redirectUrl = `${req.protocol}://${req.get('host')}/login-auth-code`;
 
     try {
-      userToken = await oidc.authorizationCodeGrant(req.query.code as string, redirectUrl);
+      userToken = await oidc.authorizationCodeGrant(req.query.code as string, constructRedirectUrl(req));
     } catch(error) {
-      console.log(error.response);
-      return res.status(error.response.status).send(error.response.data).end();
+      console.log(error.response.data);
+
+      return res.status(error.response.status)
+        .send("Unauthorized. You need to log-in first. Visit https://app.bitrise.io/users/sign_in")
+        .end();
     }
 
-    res.cookie('token', userToken.accessToken, { signed: false });
+    res.cookie('token', userToken.accessToken, {
+      signed: false,
+      maxAge: 60 * 60 * 1000 // 1 hour
+    });
+
     res.redirect('/me');
   });
 
@@ -104,4 +93,6 @@ export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
   app.delete('/provision/:app_slug', bodyParser.json(), verifyJWT, (req, res) => {
     res.send(`Clearing any ${req.params.app_slug} data...`).status(200).end();
   });
+
+  return verifyBitriseSession;
 };

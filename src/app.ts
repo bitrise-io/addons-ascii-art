@@ -1,11 +1,11 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import OIDC from './oidc';
 import ApiClient from './api_client';
 import TokenStore from './token_store';
 import redis from 'redis';
 import figlet from 'figlet';
 
-import setUpBitriseAuth from './bitrise_auth';
+import bitriseAuth from './bitrise_auth';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -27,15 +27,11 @@ app.use(cookieParser());
 app.enable('trust proxy');
 
 // setting up bitrise integration related endpoints
-setUpBitriseAuth(app, oidc, bitriseUrl);
+const verifyBitriseSession = bitriseAuth(app, oidc, bitriseUrl);
 
 // custom endpoint for the addon, has no connection for Bitrise integration
-app.get('/me', async(req, res) => {
+app.get('/me', verifyBitriseSession, async(req: Request, res: Response) => {
   const token = req.cookies.token || '';
-
-  if (!token) {
-    return res.status(401).send();
-  }
 
   try {
     const { data } = await apiClient.getMe(token);
