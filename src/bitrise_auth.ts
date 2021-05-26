@@ -32,7 +32,7 @@ export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
     }),
   });
 
-  const constructRedirectUrl = (req: Request): string => `${req.protocol}://${req.get('host')}/login-auth-code`;
+  const constructRedirectUrl = (req: Request): string => `${req.protocol}://${req.get('host')}/login`;
 
   const verifyBitriseSession = (req: Request, res: Response, next) => {
     const token = req.cookies.token || '';
@@ -68,7 +68,7 @@ export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
   });
 
 
-  app.get('/login-auth-code', async (req: Request, res) => {
+  app.get('/login', async (req: Request, res) => {
     let userToken: UserToken = null;
 
     try {
