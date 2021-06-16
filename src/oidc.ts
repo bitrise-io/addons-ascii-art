@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { UserToken, Tokens } from './types';
+import { UserToken } from './types';
 
 import TokenStore from './token_store';
 
@@ -32,13 +32,11 @@ class OIDCClient {
     return `${this.bitriseBaseUrl}/auth/realms/${this.bitriseRealm}/protocol/openid-connect/auth?${params.toString()}`;
   }
 
-  public exchangeToken = async (token: string): Promise<Tokens> => {
+  public clientCredentials = async (): Promise<string> => {
     const params = new URLSearchParams({
-      'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
+      'grant_type': 'client_credentials',
       'client_id': this.clientID,
       'client_secret': this.clientSecret,
-      'subject_token': token,
-      'requested_token_type': 'urn:ietf:params:oauth:token-type:refresh_token'
     });
 
     const config = {
@@ -48,11 +46,9 @@ class OIDCClient {
     const response = await axios.post(this.tokenUrl, params, config);
 
     const accessToken = response.data.access_token;
-    const refreshToken = response.data.refresh_token;
+    this.tokenStore.storeTokensInRedis({ accessToken: accessToken });
 
-    this.tokenStore.storeTokensInRedis({ accessToken: accessToken, refreshToken: refreshToken });
-
-    return { accessToken, refreshToken };
+    return accessToken;
   };
 
   public authorizationCodeGrant = async (authCode: string, redirectUri: string): Promise<UserToken> => {
@@ -76,27 +72,6 @@ class OIDCClient {
 
     return { accessToken, refreshToken, idToken };
   };
-
-  public refreshAccessToken = async(refreshToken: string): Promise<Tokens> => {
-    const params = new URLSearchParams({
-      'grant_type': 'refresh_token',
-      'client_id': this.clientID,
-      'client_secret': this.clientSecret,
-      'refresh_token': refreshToken,
-    });
-
-    const config = {
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-    };
-
-    const response = await axios.post(this.tokenUrl, params, config);
-    const accessToken = response.data.access_token;
-    refreshToken = response.data.refresh_token;
-
-    this.tokenStore.storeTokensInRedis({ accessToken: accessToken, refreshToken: refreshToken });
-
-    return { accessToken, refreshToken };
-  }
 };
 
 export default OIDCClient;

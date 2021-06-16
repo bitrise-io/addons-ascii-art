@@ -29,9 +29,7 @@ class ApiClient {
         if (error.response && error.response.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
 
-          let tokens = await tokenStore.retrieveTokensFromStore();
-
-          const { refreshToken, accessToken } = await oidc.refreshAccessToken(tokens.refreshToken);
+          const accessToken = await oidc.clientCredentials();
 
           originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
           return axios.request(originalRequest);

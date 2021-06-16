@@ -6,19 +6,7 @@ import { Express, Request, Response } from 'express';
 import OIDCClient from './oidc';
 import { UserToken } from './types';
 
-const getTokenFromHeader = (req: any): string | undefined => {
-  const bearerPrefixLen = 'bearer '.length;
-  const token = req.headers.authorization;
-
-  if (!token || token.length < bearerPrefixLen) {
-    return undefined;
-  }
-
-  return token.substr(bearerPrefixLen);
-};
-
 export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
-
   const issuer = `${bitriseUrl}/auth/realms/addons`;
 
   const verifyJWT = jwtMiddleware({
@@ -47,11 +35,9 @@ export default (app: Express, oidc: OIDCClient, bitriseUrl: string) => {
 
   // Provisioner endpoint -> user added this addon for a perticular app
   app.post('/provision', bodyParser.json({ type(req) { return true; }}), verifyJWT, async (req, res) => {
-    const token = getTokenFromHeader(req)
-
     try {
-      // exchange the received token for background processing token when needed
-      await oidc.exchangeToken(token);
+      // request client credentials token -> this does not have user context can not be used to access user data
+      await oidc.clientCredentials();
 
       // do any initialization logic here for individual application
 
