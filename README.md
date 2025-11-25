@@ -5,7 +5,7 @@ This addon is used for demo purposes to illustrate the addons integration flow. 
 ![logo](./assets/hello_world.png)
 
 This addon gets an addon API token and use this to request Bitrise API for the current app name. Finally displays it in an ASCII art way.
- 
+  
 The required addon endpoints are located in [app.ts file](./src/app.ts).
 
 ## Usage
